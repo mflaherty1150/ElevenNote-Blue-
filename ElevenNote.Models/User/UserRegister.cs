@@ -22,5 +22,8 @@ namespace ElevenNote.Models.User
 
         [Compare(nameof(Password))]
         public string ConfirmPassword { get; set; }
+
+        public string firstName { get; set; }
+        public string lastName { get; set; }
     }
 }
