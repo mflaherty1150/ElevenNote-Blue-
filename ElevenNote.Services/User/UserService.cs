@@ -36,11 +36,32 @@ namespace ElevenNote.Services.User
             var passwordHasher = new PasswordHasher<UserEntity>();
 
             entity.Password = passwordHasher.HashPassword(entity, model.Password);
-            
+
             _context.Users.Add(entity);
             var numberOfChanges = await _context.SaveChangesAsync();
 
             return numberOfChanges == 1;
+        }
+
+        public async Task<UserDetail> GetUserByIdAsync(int userId)
+        {
+            var entity = await _context.Users.FindAsync(userId);
+            if (entity is null)
+            {
+                return null;
+            }
+            
+            var userDetail = new UserDetail
+            {
+                Id = entity.Id,
+                Email = entity.Email,
+                Username = entity.Username,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
+                DateCreated = entity.DateCreated
+            };
+
+            return userDetail;
         }
 
         private async Task<UserEntity> GetUserByEmailAsync(string email)
