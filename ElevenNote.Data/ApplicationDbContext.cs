@@ -16,5 +16,14 @@ namespace ElevenNote.Data
 
         public DbSet<UserEntity> Users { get; set; }
         public DbSet<NoteEntity> Notes { get; set; }
+
+        // Fluent API - can be used instead of creating annotations in the entity objects to establish FK relationships
+        // protected override void OnModelCreating(ModelBuilder modelBuilder)
+        // {
+        //     modelBuilder.Entity<NoteEntity>()
+        //         .HasOne(n => n.Owner)
+        //         .WithMany(p => p.Notes)
+        //         .HasForeignKey(n => n.OwnerId);
+        // }
     }
 }
