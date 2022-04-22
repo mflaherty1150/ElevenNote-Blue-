@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using AutoMapper;
 using ElevenNote.Data;
 using ElevenNote.Data.Entities;
 using ElevenNote.Models.Note;
@@ -14,8 +15,9 @@ namespace ElevenNote.Services.Note
     public class NoteService : INoteService
     {
         private readonly int _userId;
+        private readonly IMapper _mapper;
         private readonly ApplicationDbContext _dbContext;
-        public NoteService(IHttpContextAccessor httpContextAccessor, ApplicationDbContext dbContext)
+        public NoteService(IHttpContextAccessor httpContextAccessor, IMapper mapper, ApplicationDbContext dbContext)
         {
             var userClaims = httpContextAccessor.HttpContext.User.Identity as ClaimsIdentity;
             var value = userClaims.FindFirst("Id")?.Value;
@@ -23,18 +25,21 @@ namespace ElevenNote.Services.Note
             if (!validId)
                 throw new Exception("Attempted to build NoteService without User Id claim.");
 
+            _mapper = mapper;
             _dbContext = dbContext;
         }
 
         public async Task<bool> CreateNoteAsync(NoteCreate request)
         {
-            var noteEntity = new NoteEntity
-            {
-                Title = request.Title,
-                Content = request.Content,
-                CreatedUtc = DateTimeOffset.Now,
-                OwnerId = _userId
-            };
+            // var noteEntity = new NoteEntity
+            // {
+            //     Title = request.Title,
+            //     Content = request.Content,
+            //     CreatedUtc = DateTimeOffset.Now,
+            //     OwnerId = _userId
+            // };
+            var noteEntity = _mapper.Map<NoteCreate, NoteEntity>(request, opt => opt.AfterMap((src, dest) => dest.OwnerId = _userId));
+            // Again, this one (1) line replace the seven (7) lines above it
 
             _dbContext.Notes.Add(noteEntity);
 
@@ -45,12 +50,13 @@ namespace ElevenNote.Services.Note
         {
             var notes = await _dbContext.Notes
                 .Where(entity => entity.OwnerId == _userId)
-                .Select(entity => new NoteListItem
-                {
-                    Id = entity.Id,
-                    Title = entity.Title,
-                    CreatedUtc = entity.CreatedUtc
-                })
+                // .Select(entity => new NoteListItem
+                // {
+                //     Id = entity.Id,
+                //     Title = entity.Title,
+                //     CreatedUtc = entity.CreatedUtc
+                // })
+                .Select(entity => _mapper.Map<NoteListItem>(entity)) // with AutoMap, this line replaces the above six (6) lines
                 .ToListAsync();
 
             return notes;
@@ -65,30 +71,54 @@ namespace ElevenNote.Services.Note
                 );
 
             // If noteEntity is null then return null, otherwise initialize and return a new NoteDetail
-            return noteEntity is null ? null : new NoteDetail
-            {
-                Id = noteEntity.Id,
-                Title = noteEntity.Title,
-                Content = noteEntity.Content,
-                CreatedUtc = noteEntity.CreatedUtc,
-                ModifiedUtc = noteEntity.ModifiedUtc
-            };
+            // return noteEntity is null ? null : new NoteDetail
+            // {
+            //     Id = noteEntity.Id,
+            //     Title = noteEntity.Title,
+            //     Content = noteEntity.Content,
+            //     CreatedUtc = noteEntity.CreatedUtc,
+            //     ModifiedUtc = noteEntity.ModifiedUtc
+            // };
+            return noteEntity is null ? null : _mapper.Map<NoteDetail>(noteEntity); // Again, this line replaces the eight (8) above it.
         }
 
         public async Task<bool> UpdateNoteAsync(NoteUpdate request)
         {
-            // Find the note and validate it's owned by the user
-            var noteEntity = await _dbContext.Notes.FindAsync(request.Id);
+            // // Find the note and validate it's owned by the user
+            // var noteEntity = await _dbContext.Notes.FindAsync(request.Id);
 
-            // By using the null conditional operator we can check if it's null at the same time we check the OwnerId
-            // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/member-access-operators#null-conditional-operators--and-
-            if (noteEntity?.OwnerId != _userId)
+            // // By using the null conditional operator we can check if it's null at the same time we check the OwnerId
+            // // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/member-access-operators#null-conditional-operators--and-
+            // if (noteEntity?.OwnerId != _userId)
+            //     return false;
+
+            // // Now we update the entity's properties
+            // noteEntity.Title = request.Title;
+            // noteEntity.Content = request.Content;
+            // noteEntity.ModifiedUtc = DateTimeOffset.Now;
+
+            // // Save the changes to the database and capture how many rows were updated
+            // var numberOfChanges = await _dbContext.SaveChangesAsync();
+
+            // // numberOfChanges is stated to be equal to 1 because only one row is updated
+            // return numberOfChanges == 1;
+
+            // Check the database to see if there's a note entity that matches the request information
+            // Any returns true if any entity exists
+            var noteIsUserOwned = await _dbContext.Notes.AnyAsync(note => note.Id == request.Id && note.OwnerId == _userId);
+
+            // If the Any check returns false, then we know the Note either does not exist or the note is not owned by the user
+            if (!noteIsUserOwned)
                 return false;
 
-            // Now we update the entity's properties
-            noteEntity.Title = request.Title;
-            noteEntity.Content = request.Content;
-            noteEntity.ModifiedUtc = DateTimeOffset.Now;
+            // Map from Update to Entity and set OwnerId again
+            var newEntity = _mapper.Map<NoteUpdate, NoteEntity>(request, opt => opt.AfterMap((src, dest) => dest.OwnerId = _userId));
+
+            // Update the Entry State, which is another way to tell the DbContext something has changed
+            _dbContext.Entry(newEntity).State = EntityState.Modified;
+
+            // Because we don't currently have access to our CreatedUtc value, we'll just mark it as not modified
+            _dbContext.Entry(newEntity).Property(e => e.CreatedUtc).IsModified = false;
 
             // Save the changes to the database and capture how many rows were updated
             var numberOfChanges = await _dbContext.SaveChangesAsync();
