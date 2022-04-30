@@ -45,7 +45,6 @@ namespace ElevenNote.WebAPI.Controllers
         // GET api/Note/5
         [HttpGet("{noteId:int}")]
         [ProducesResponseType(typeof(NoteDetail), 200)]
-
         public async Task<IActionResult> GetNoteById([FromRoute] int noteId)
         {
             var detail = await _noteService.GetNoteByIdAsync(noteId);
@@ -58,6 +57,15 @@ namespace ElevenNote.WebAPI.Controllers
                 : NotFound();
         }
 
+        // GET api/Note/Star - Gets all starred notes for current user
+        [HttpGet("~/All")]
+        [ProducesResponseType(typeof(NoteDetail), 200)]
+        public async Task<IActionResult> GetAllStarredNotes()
+        {
+            var notes = _noteService.GetAllStarredNotesAsync();
+            return Ok(notes);
+        }
+
         // PUT api/Note
         [HttpPut]
         public async Task<IActionResult> UpdateNoteById([FromBody] NoteUpdate request)
@@ -68,6 +76,18 @@ namespace ElevenNote.WebAPI.Controllers
             return await _noteService.UpdateNoteAsync(request)
                 ? Ok("Note updated successfully.")
                 : BadRequest("Note could not be updated.");
+        }
+
+        // PUT api/Note/Star
+        [HttpPut("Star/{noteId}:int")]
+        public async Task<IActionResult> ToggleStarOnNote([FromRoute] int noteId)
+        {
+            var note = await _noteService.GetNoteByIdAsync(noteId);
+            if (note == null)
+                return BadRequest();
+            return await _noteService.ToggleStarOnNoteAsync(note.Id)
+                ? Ok("Star toggled.")
+                : BadRequest("Could not toggle star.");
         }
 
         // DELETE api/Note/{id}

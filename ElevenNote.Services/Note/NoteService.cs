@@ -61,6 +61,14 @@ namespace ElevenNote.Services.Note
 
             return notes;
         }
+        public async Task<IEnumerable<NoteListItem>> GetAllStarredNotesAsync()
+        {
+            var notes = await _dbContext.Notes
+                .Where(entity => entity.OwnerId == _userId && entity.IsStarred)
+                .Select(entity => _mapper.Map<NoteListItem>(entity))
+                .ToListAsync();
+            return notes;
+        }
 
         public async Task<NoteDetail> GetNoteByIdAsync(int noteId)
         {
@@ -138,6 +146,19 @@ namespace ElevenNote.Services.Note
 
             // Remove the note from the DbContext and assert that the one change was saved
             _dbContext.Notes.Remove(noteEntity);
+            return await _dbContext.SaveChangesAsync() == 1;
+        }
+
+        public async Task<bool> ToggleStarOnNoteAsync(int noteId)
+        {
+            var noteEntity = await _dbContext.Notes.FindAsync(noteId);
+
+            if (noteEntity?.OwnerId != _userId)
+                return false;
+
+            if (noteEntity.IsStarred) noteEntity.IsStarred = false;
+            else noteEntity.IsStarred = true;
+
             return await _dbContext.SaveChangesAsync() == 1;
         }
     }

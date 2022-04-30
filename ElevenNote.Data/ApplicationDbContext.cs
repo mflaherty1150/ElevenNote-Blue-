@@ -16,6 +16,7 @@ namespace ElevenNote.Data
 
         public DbSet<UserEntity> Users { get; set; }
         public DbSet<NoteEntity> Notes { get; set; }
+        public DbSet<CategoryEntity> Categories { get; set; }
 
         // Fluent API - can be used instead of creating annotations in the entity objects to establish FK relationships
         // protected override void OnModelCreating(ModelBuilder modelBuilder)

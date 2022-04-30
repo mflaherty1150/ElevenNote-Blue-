@@ -9,6 +9,8 @@ namespace ElevenNote.Models.Note
     {
         public int Id { get; set; }
         public string Title { get; set; }
+        public int CategoryId { get; set; }
         public DateTimeOffset CreatedUtc { get; set; }
+        public bool IsStarred { get; set; }
     }
 }

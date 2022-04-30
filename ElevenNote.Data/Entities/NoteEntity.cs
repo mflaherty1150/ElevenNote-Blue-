@@ -22,8 +22,13 @@ namespace ElevenNote.Data.Entities
         [Required]
         public string Content { get; set; }
 
+        [ForeignKey(nameof(Category))]
+        public int? CategoryId { get; set; }
+        public CategoryEntity Category { get; set; }
+
         [Required]
         public DateTimeOffset CreatedUtc { get; set; }
         public DateTimeOffset? ModifiedUtc { get; set; }
+        public bool IsStarred { get; set; }
     }
 }

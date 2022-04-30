@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using ElevenNote.Data;
 using ElevenNote.Models.Maps;
+using ElevenNote.Services.Category;
 using ElevenNote.Services.Note;
 using ElevenNote.Services.Token;
 using ElevenNote.Services.User;
@@ -23,6 +24,7 @@ builder.Services.AddHttpContextAccessor();
 // Add User Service/Interface for Dependency Injection here
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<INoteService, NoteService>();
 builder.Services.AddAutoMapper(typeof(NoteMapProfile));
 
